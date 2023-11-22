@@ -60,8 +60,16 @@ module Tasks
             subject
 
             error_csv = CSV.open(result_file, "r")
-            expect(error_csv.first).to eq(%w[error id reference email live_on disbursement_frequency minimum_monthly_fee])
-            expect(error_csv.first).to eq(["Data missing", "d1649242-a612-46ba-82d8-225542bb9576", "deckow_gibson", "info@deckow-gibson.com", "2022-12-14", "WEEKLY", nil])
+
+            batch = [
+              { "id"=> "86312006-4d7e-45c4-9c28-788f4aa68a62", "reference"=> "padberg_group", "email"=> "info@padberg-group.com", "live_on"=> "2023-02-01", "disbursement_frequency"=> "DAILY", "minimum_monthly_fee"=> "0.0" },
+              { "id"=> "d1649242-a612-46ba-82d8-225542bb9576", "reference"=> "deckow_gibson", "email"=> "info@deckow-gibson.com", "live_on"=> "2022-12-14",  "disbursement_frequency"=> "WEEKLY", "minimum_monthly_fee"=> nil },
+            ]
+
+            row = { "id"=> "d1649242-a612-46ba-82d8-225542bb9576", "reference"=> "deckow_gibson", "email"=> "info@deckow-gibson.com", "live_on"=> "2022-12-14",  "disbursement_frequency"=> "WEEKLY", "minimum_monthly_fee"=> nil }
+
+            expect(error_csv.first).to eq(%w[error batch row])
+            expect(error_csv.first).to eq(["Data missing", "#{batch}", "#{row}"])
           end
 
           it "should create the other merchants correctly" do
@@ -81,9 +89,11 @@ module Tasks
 
         context "when merchant creation fails" do
           before do
+            allow(Merchant).to receive(:import).and_raise(StandardError.new("Error creating"))
+  
             CSV.open("spec/fixtures/files/merchants.csv", "w") do |merchants|
               merchants << %w[id reference email live_on disbursement_frequency minimum_monthly_fee]
-              merchants << %w[86312006-4d7e-45c4-9c28-788f4aa68a62 padberg_group info@padberg-group.com invalid_date DAILY 0.0]
+              merchants << %w[86312006-4d7e-45c4-9c28-788f4aa68a62 padberg_group info@padberg-group.com 2010-02-03 DAILY 0.0]
             end
           end
 
@@ -95,8 +105,13 @@ module Tasks
             subject
 
             error_csv = CSV.open(result_file, "r")
-            expect(error_csv.first).to eq(%w[error id reference email live_on disbursement_frequency minimum_monthly_fee])
-            expect(error_csv.first).to eq(["invalid date", "86312006-4d7e-45c4-9c28-788f4aa68a62", "padberg_group", "info@padberg-group.com", "invalid_date", "DAILY", "0.0"])
+
+            batch = [
+              { "id"=> "86312006-4d7e-45c4-9c28-788f4aa68a62", "reference"=> "padberg_group", "email"=> "info@padberg-group.com", "live_on"=> "2010-02-03", "disbursement_frequency"=> "DAILY", "minimum_monthly_fee"=> "0.0" }
+            ]
+
+            expect(error_csv.first).to eq(%w[error batch row])
+            expect(error_csv.first).to eq(["Error creating", "#{batch}", "{}"])
           end
         end
       end
