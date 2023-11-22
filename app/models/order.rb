@@ -17,10 +17,10 @@ class Order < ApplicationRecord
       else 0.0085
     end
 
-    (amount * commission_rate).round(2) 
+    amount * commission_rate
   end
 
   def calculated_net_amount
-    (amount - calculated_commision_fee).round(2)
+    amount - calculated_commision_fee
   end
 end
