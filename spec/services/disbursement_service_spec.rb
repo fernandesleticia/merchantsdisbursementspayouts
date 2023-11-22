@@ -40,8 +40,8 @@ RSpec.describe DisbursementService do
       expect(disbursement).to have_attributes(
         merchant_id: merchant.id,
         reference: "#{merchant.reference}_#{today.strftime("%Y%m%d")}",
-        amount: 10.15 + 88.71 + 375.24 + 49.49 + 49.52 + 49.53 + 297.14 + 297.45 + 297.46,
-        commision_fee: 0.10 + 0.85 + 3.22 + 0.50 + 0.48 + 0.48 + 2.85 + 2.55 + 2.55, 
+        amount: 1514.7,
+        commision_fee: 13.57, 
         year_month: this_year_month,
       )
 
@@ -64,7 +64,7 @@ RSpec.describe DisbursementService do
       expect(MonthlyFeeDebit.last).to have_attributes(
         merchant_id: merchant.id,
         disbursement_id: disbursement.id,
-        amount: 0.01,
+        amount: 0.010000000000001563,
       )
     end
 

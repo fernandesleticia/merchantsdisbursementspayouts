@@ -16,6 +16,8 @@ class Disbursement < ApplicationRecord
   end
 
   def verify_debit
+    return unless first_merchant_month_disbursement?
+
     register_debit if merchant.debit?
   end
 
