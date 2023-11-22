@@ -1,31 +1,40 @@
+# frozen_string_literal: true
+
 class OrderCsvImporter < BaseCsvImporter
+  BATCH_SIZE = 100
+
   def process_batch
+    begin
+      Order.import columns, orders, validate: true
+    rescue StandardError => e
+      batch_with_error = true
+      log(e.message, @batch)
+    end
+
+    @batch = []
+  end
+
+  def columns
+    %i[uid merchant_id amount creation_date]
+  end
+
+  def orders
     batch_with_error = false
-    orders_to_process = []
+    orders = []
 
     @batch.each do |row|
       validates_data(row)
 
       merchant = Merchant.find_by_reference!(row["merchant_reference"])
-
-      Order.create!(
-        uid: row["id"],
-        merchant: merchant,
-        amount: row["amount"],
-        creation_date: Date.parse(row["created_at"]),
-      )
+      orders << [row["id"], merchant.id, row["amount"], Date.parse(row["created_at"])]
     rescue StandardError => e
       batch_with_error = true
-      log(e.message, row)
+      log(e.message, @batch, row: row)
       next
     end
 
-    @batch = []
     write_dot(batch_with_error)
-  end
-
-  def result_output_stream_header
-    CSV.generate_line(["error", "id", "merchant_reference", "amount", "created_at"])
+    orders
   end
 
   def valid_row?(row)
@@ -33,19 +42,5 @@ class OrderCsvImporter < BaseCsvImporter
     row["merchant_reference"].present? &&
     row["amount"].present? &&
     row["created_at"].present?
-  end
-
-  def log(error, row)
-    result_output_stream.write(
-      CSV.generate_line(
-        [
-          error,
-          row["id"],
-          row["merchant_reference"],
-          row["amount"],
-          row["created_at"]
-        ]
-      )
-    )
   end
 end

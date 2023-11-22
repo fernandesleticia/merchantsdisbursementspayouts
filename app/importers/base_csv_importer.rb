@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class BaseCsvImporter
   BATCH_SIZE = 20
   COMMON_DELIMITERS = ['","', '";"', "\"\t\""].freeze
@@ -27,8 +29,6 @@ class BaseCsvImporter
     @batch= []
     result_output_stream.write(result_output_stream_header)
 
-    start = Time.current
-
     col_sep = sniff_column_separator(input_csv_file)
 
     CSV.foreach(input_csv_file, headers: true, encoding: "ISO-8859-1", col_sep: col_sep).with_index do |row|
@@ -51,5 +51,21 @@ class BaseCsvImporter
     return if valid_row?(row)
 
     raise StandardError, "Data missing"
+  end
+
+  def result_output_stream_header
+    CSV.generate_line(["error", "batch", "row"])
+  end
+
+  def log(error, batch, row: nil)
+    result_output_stream.write(
+      CSV.generate_line(
+        [
+          error,
+          batch.map(&:to_h),
+          row.to_h
+        ]
+      )
+    )
   end
 end

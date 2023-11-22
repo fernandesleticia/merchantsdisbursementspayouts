@@ -63,8 +63,16 @@ module Tasks
             subject
 
             error_csv = CSV.open(result_file, "r")
-            expect(error_csv.first).to eq(%w[error id merchant_reference amount created_at])
-            expect(error_csv.first).to eq(["Data missing", "20b674c93ea6", "#{merchant2.reference}", "80.0", nil])
+
+            batch = [
+              { "id"=> "e653f3e14bc4", "merchant_reference"=> "#{merchant1.reference}", "amount"=> "50.0", "created_at"=> "2023-02-01" },
+              { "id"=> "20b674c93ea6", "merchant_reference"=> "#{merchant2.reference}", "amount"=> "80.0", "created_at"=> nil },
+            ]
+
+            row = { "id"=> "20b674c93ea6", "merchant_reference"=> "#{merchant2.reference}", "amount"=> "80.0", "created_at"=> nil }
+
+            expect(error_csv.first).to eq(%w[error batch row])
+            expect(error_csv.first).to eq(["Data missing", "#{batch}", "#{row}"])
           end
 
           it "should create the other orders correctly" do
@@ -80,7 +88,7 @@ module Tasks
           end
         end
 
-        context "when order creation fails" do
+        context "when merchant is not found" do
           before do
             CSV.open("spec/fixtures/files/orders.csv", "w") do |orders|
               orders << %w[id merchant_reference amount created_at]
@@ -96,8 +104,44 @@ module Tasks
             subject
 
             error_csv = CSV.open(result_file, "r")
-            expect(error_csv.first).to eq(%w[error id merchant_reference amount created_at])
-            expect(error_csv.first).to eq(["Couldn't find Merchant", "e653f3e14bc4", "padberg_group", "50.0", "2022-01-01"])
+
+            row = { "id"=> "e653f3e14bc4", "merchant_reference"=> "padberg_group", "amount"=> "50.0", "created_at"=> "2022-01-01" }
+            batch = [row]
+
+            expect(error_csv.first).to eq(%w[error batch row])
+            expect(error_csv.first).to eq(["Couldn't find Merchant", "#{batch}", "#{row}"])
+          end
+        end
+
+        context "when an error ocurrs creating orders" do
+          let(:merchant) { create(:merchant) }
+
+          before do
+            allow(Order).to receive(:import).and_raise(StandardError.new("Error creating"))
+
+            CSV.open("spec/fixtures/files/orders.csv", "w") do |orders|
+              orders << %w[id merchant_reference amount created_at]
+              orders << ["e653f3e14bc4", "#{merchant.reference}", "50.0", "2022-01-01"]
+              orders << ["e653f3e14bc4", "#{merchant.reference}", "60.0", "2022-01-06"]
+            end
+          end
+
+          it "should not raise an error" do
+            expect { subject }.not_to raise_error
+          end
+
+          it "should log an error" do
+            subject
+
+            error_csv = CSV.open(result_file, "r")
+
+            batch = [
+              { "id"=> "e653f3e14bc4", "merchant_reference"=> "#{merchant.reference}", "amount"=> "50.0", "created_at"=> "2022-01-01" },
+              { "id"=> "e653f3e14bc4", "merchant_reference"=> "#{merchant.reference}", "amount"=> "60.0", "created_at"=> "2022-01-06" }
+            ]
+
+            expect(error_csv.first).to eq(%w[error batch row])
+            expect(error_csv.first).to eq(["Error creating", "#{batch}", "{}"])
           end
         end
       end

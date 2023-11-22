@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 namespace :orders do
-  desc "Import Order"
+  desc "Import Orders"
 
   task :import, [:csvfile] => [:environment] do |_task, args|
     orders_csv_file_path = args[:csvfile]
