@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class DisbursementService
+  extend Memoist
+
   attr_reader :merchant, :disbursement
 
   def initialize(merchant)
@@ -9,29 +11,35 @@ class DisbursementService
   end
 
   def run
-    disbursement.verify_debit if disbursement.first_merchant_month_disbursement?
-
-    merchant.orders.needs_disbursement.each do |order|
-      disburse(order)
-    end
-  end
-
-  def disburse(order)
     ActiveRecord::Base.transaction do
-      process_disbursement(order)
-      process_order(order)
+      disbursement.verify_debit
+
+      update_disbursement
+      update_orders
     end
   end
 
-  def process_disbursement(order)
-    disbursement.amount += order.calculated_net_amount
-    disbursement.commision_fee += order.calculated_commision_fee
+  def update_disbursement
+    disbursement.amount = total_orders_net_amount.round(2)
+    disbursement.commision_fee = total_orders_commission_fee.round(2)
+
     disbursement.save!
   end
 
-  def process_order(order)
-    order.disbursement = disbursement
-    order.disbursed = true
-    order.save!
+  def update_orders
+    orders.update_all(disbursement_id: disbursement.id, disbursed: true)
   end
+
+  def total_orders_net_amount
+    orders.map(&:calculated_net_amount).sum
+  end
+
+  def total_orders_commission_fee
+    orders.map(&:calculated_commision_fee).sum
+  end
+
+  def orders
+    merchant.orders.needs_disbursement
+  end
+  memoize :orders
 end
