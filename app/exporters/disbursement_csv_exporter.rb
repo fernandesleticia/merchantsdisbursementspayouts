@@ -4,12 +4,13 @@ class DisbursementCsvExporter
   attr_accessor :result_output_stream
 
   def run
-    result_output_stream = File.open("/tmp/disbursements.csv", "w")
+    result_output_stream = File.open("tmp/disbursements.csv", "w")
     result_output_stream.write(result_output_stream_header)
 
     disbursements_summary_query = "SELECT * FROM disbursements_summary"
 
     conn = ActiveRecord::Base.connection.raw_connection
+
     conn.copy_data "COPY ( #{disbursements_summary_query} ) TO STDOUT WITH CSV;" do
       while row = conn.get_copy_data
         result_output_stream.write(row.force_encoding('UTF-8'))
