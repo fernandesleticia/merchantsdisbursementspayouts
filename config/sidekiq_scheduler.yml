@@ -1,14 +1,5 @@
-default: &default
-  disbursement_job:
-    class: DisbursementJob
-    cron: '0 0 * * * UTC'
-    description: "This job runs every day at 00:00 UTC to calculate merchants disbursements payouts and commissions for orders."
+disbursement_job:
+  class: DisbursementJob
+  cron: '0 0 * * * UTC'
+  description: "This job runs every day at 00:00 UTC to calculate merchants disbursements payouts and commissions for orders."
 
-development:
-  <<: *default
-
-staging:
-  <<: *default
-
-production:
-  <<: *default
