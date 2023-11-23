@@ -1,16 +1,45 @@
 services:
   db:
     image: postgres
+    ports:
+      - 5432:5432
+    networks:
+      - compose-network
     volumes:
       - ./tmp/db:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: postgres
-  web:
+
+  redis:
+    image: redis:6-alpine
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    networks:
+      - compose-network
+    volumes:
+      - redis:/data
+    logging:
+      options:
+        max-size: "50k"
+
+  app:
     build: .
     command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
     volumes:
       - .:/merchantsdisbursementspayouts
+      - /tmp:/merchantsdisbursementspayouts/tmp
     ports:
       - "3000:3000"
+    networks:
+      - compose-network
     depends_on:
       - db
+      - redis
+
+volumes:
+  db:
+  redis:
+
+networks:
+  compose-network:

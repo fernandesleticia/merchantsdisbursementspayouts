@@ -64,7 +64,7 @@ RSpec.describe DisbursementService do
       expect(MonthlyFeeDebit.last).to have_attributes(
         merchant_id: merchant.id,
         disbursement_id: disbursement.id,
-        amount: 0.010000000000001563,
+        amount: 0.01,
       )
     end
 

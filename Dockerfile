@@ -13,9 +13,6 @@ COPY Gemfile.lock /merchantsdisbursementspayouts/Gemfile.lock
 # run bundle install during the set up process of the image
 RUN bundle install
 
-# copy source code from the local folder (where the Dockerfile is) to the working directory
-# COPY . .
-
 # Adds a script to be executed every time the container starts
 COPY entrypoint.sh /usr/bin/
 RUN chmod +x /usr/bin/entrypoint.sh
